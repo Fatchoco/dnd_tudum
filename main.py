@@ -1,5 +1,5 @@
 def main():
-    print("Hello from gic-tudum!")
+    print("Hello from dnd-tudum!")
 
 
 if __name__ == "__main__":

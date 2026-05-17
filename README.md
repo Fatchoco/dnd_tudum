@@ -1,4 +1,4 @@
-# GIC Tudum
+# DnD Tudum
 
 Data pipeline to collect and enrich Netflix Top 10 English TV shows.
 
