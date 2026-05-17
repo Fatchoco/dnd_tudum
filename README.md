@@ -33,3 +33,29 @@ Reads `01.netflix_top10_english_shows.csv` and adds two new columns:
   recognisable season indicator was found.
 
 Output: `02.netflix_top10_english_shows_with_seasons.csv`
+
+### 3. Enrich with TMDB metadata
+
+```bash
+uv run enrich_with_tmdb.py
+```
+
+Reads the distinct `(title_clean, season)` pairs from
+`02.netflix_top10_english_shows_with_seasons.csv` and looks each one up on the
+[TMDB API](https://developer.themoviedb.org/docs). For each pair it fetches:
+
+- **`tmdb_id`** / **`tmdb_title`** — TMDB identifier and matched show name.
+- **`tmdb_score`** — User rating (`vote_average`).
+- **`status`** — e.g. `Ended`, `Returning Series`, `Canceled`.
+- **`network`** — Pipe-separated list of broadcast/streaming networks.
+- **`type`** — e.g. `Scripted`, `Reality`, `Documentary`.
+- **`genre`** — Pipe-separated list of genres (e.g. `Drama | Crime`).
+- **`season_air_date`** — Premiere date of that specific season.
+
+Requires a `.env` file in the project root with your TMDB API key:
+
+```
+TMDB_API_KEY=your_key_here
+```
+
+Output: `03.netflix_top10_english_shows_with_tmdb.csv`
