@@ -171,6 +171,10 @@ def main() -> None:
         tv_result = search_tmdb_show(title_clean, api_key)
         time.sleep(REQUEST_DELAY)
 
+        if tv_result is None and ": " in title_clean:
+            tv_result = search_tmdb_show(title_clean.split(": ")[0], api_key)
+            time.sleep(REQUEST_DELAY)
+
         if tv_result is not None:
             tmdb_id: int = tv_result["id"]
             tmdb_title: str = tv_result.get("name")
