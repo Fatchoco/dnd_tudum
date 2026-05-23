@@ -103,7 +103,6 @@ def main() -> None:
         )
         print(f"Found {len(done)} already-processed pairs in {OUTPUT_FILE}.")
     else:
-        existing_df = pd.DataFrame()
         done = set()
 
     pending = pairs[
@@ -117,7 +116,8 @@ def main() -> None:
 
     print(f"Skipping {len(done)} already done. Processing {total} remaining...")
 
-    rows: list[dict] = []
+    write_header = not os.path.exists(OUTPUT_FILE)
+    written = 0
 
     for i, row in pending.iterrows():
         title_clean: str = row["title_clean"]
@@ -130,7 +130,7 @@ def main() -> None:
         time.sleep(REQUEST_DELAY)
 
         if result is None:
-            rows.append({
+            row_data = {
                 "title_clean": title_clean,
                 "season": season_label,
                 "tmdb_id": None,
@@ -142,32 +142,32 @@ def main() -> None:
                 "genre": None,
                 "season_air_date": None,
                 "tmdb_lookup_type": None,
-            })
-            continue
+            }
+        else:
+            tmdb_id: int = result["id"]
+            tmdb_title: str = result.get("name")
 
-        tmdb_id: int = result["id"]
-        tmdb_title: str = result.get("name")
+            details = fetch_show_details(tmdb_id, api_key)
+            time.sleep(REQUEST_DELAY)
 
-        details = fetch_show_details(tmdb_id, api_key)
-        time.sleep(REQUEST_DELAY)
+            season_air_date = fetch_season_air_date(tmdb_id, season_num, api_key)
+            time.sleep(REQUEST_DELAY)
 
-        season_air_date = fetch_season_air_date(tmdb_id, season_num, api_key)
-        time.sleep(REQUEST_DELAY)
+            row_data = {
+                "title_clean": title_clean,
+                "season": season_label,
+                "tmdb_id": tmdb_id,
+                "tmdb_title": tmdb_title,
+                **details,
+                "season_air_date": season_air_date,
+                "tmdb_lookup_type": lookup_type,
+            }
 
-        rows.append({
-            "title_clean": title_clean,
-            "season": season_label,
-            "tmdb_id": tmdb_id,
-            "tmdb_title": tmdb_title,
-            **details,
-            "season_air_date": season_air_date,
-            "tmdb_lookup_type": lookup_type,
-        })
+        pd.DataFrame([row_data]).to_csv(OUTPUT_FILE, mode="a", header=write_header, index=False)
+        write_header = False
+        written += 1
 
-    new_df = pd.DataFrame(rows)
-    output_df = pd.concat([existing_df, new_df], ignore_index=True)
-    output_df.to_csv(OUTPUT_FILE, index=False)
-    print(f"\nDone! {len(rows)} new rows written to {OUTPUT_FILE}")
+    print(f"\nDone! {written} new rows written to {OUTPUT_FILE}")
 
 
 if __name__ == "__main__":
