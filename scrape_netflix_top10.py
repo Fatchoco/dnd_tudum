@@ -12,7 +12,7 @@ from bs4 import BeautifulSoup
 
 BASE_URL = "https://www.netflix.com/tudum/top10/tv"
 OUTPUT_FILE = "01.netflix_top10_english_shows.csv"
-LOOKBACK_YEARS = 2
+LOOKBACK_MONTHS = 13
 HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
@@ -31,9 +31,9 @@ def fetch_page(url: str) -> tuple[BeautifulSoup, str]:
 def get_available_weeks(html: str) -> list[dict]:
     """
     Extract all available week date ranges from the JSON embedded in the page,
-    filtered to the last LOOKBACK_YEARS years. Returns a list oldest-first.
+    filtered to the last LOOKBACK_MONTHS months. Returns a list oldest-first.
     """
-    cutoff = date.today() - timedelta(days=365 * LOOKBACK_YEARS)
+    cutoff = date.today() - timedelta(days=30 * LOOKBACK_MONTHS)
 
     matches = re.findall(
         r'\{"startDate":"(\d{4}-\d{2}-\d{2})","endDate":"(\d{4}-\d{2}-\d{2})"\}',
