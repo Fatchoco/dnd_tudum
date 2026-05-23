@@ -2,6 +2,11 @@
 
 Data pipeline to collect and enrich Netflix Top 10 English TV shows.
 
+## Goal
+
+Predict the **Global Top 10 Netflix TV Shows (English) for the week of 22 June 2026**
+(the second-to-last week of June), and guess the **Tomatometer rating** for the #1 show.
+
 ## Steps to reproduce
 
 ### 1. Scrape the data
