@@ -87,6 +87,48 @@ def fetch_season_air_date(tmdb_id: int, season_num: int, api_key: str) -> str | 
         return None
 
 
+def search_tmdb_movie(title: str, api_key: str) -> dict | None:
+    """Search TMDB for a movie by title; return the top result or None."""
+    url = f"{TMDB_BASE_URL}/search/movie"
+    try:
+        response = requests.get(
+            url,
+            params={"query": title, "api_key": api_key},
+            timeout=10,
+        )
+        response.raise_for_status()
+        results = response.json().get("results", [])
+        return results[0] if results else None
+    except (requests.RequestException, ValueError):
+        return None
+
+
+def fetch_movie_details(tmdb_id: int, api_key: str) -> dict:
+    """Fetch detailed movie info from TMDB; mapped to the same fields as TV shows."""
+    url = f"{TMDB_BASE_URL}/movie/{tmdb_id}"
+    try:
+        response = requests.get(url, params={"api_key": api_key}, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        return {
+            "tmdb_score": data.get("vote_average"),
+            "status": data.get("status"),
+            "network": None,
+            "type": "Movie",
+            "genre": " | ".join(g["name"] for g in data.get("genres", [])) or None,
+            "season_air_date": data.get("release_date"),
+        }
+    except (requests.RequestException, ValueError):
+        return {
+            "tmdb_score": None,
+            "status": None,
+            "network": None,
+            "type": "Movie",
+            "genre": None,
+            "season_air_date": None,
+        }
+
+
 def main() -> None:
     api_key = load_api_key()
 
@@ -126,26 +168,12 @@ def main() -> None:
 
         print(f"  [{i + 1}/{total}] {title_clean} — {season_label or '(no season)'}")
 
-        result = search_tmdb_show(title_clean, api_key)
+        tv_result = search_tmdb_show(title_clean, api_key)
         time.sleep(REQUEST_DELAY)
 
-        if result is None:
-            row_data = {
-                "title_clean": title_clean,
-                "season": season_label,
-                "tmdb_id": None,
-                "tmdb_title": None,
-                "tmdb_score": None,
-                "status": None,
-                "network": None,
-                "type": None,
-                "genre": None,
-                "season_air_date": None,
-                "tmdb_lookup_type": None,
-            }
-        else:
-            tmdb_id: int = result["id"]
-            tmdb_title: str = result.get("name")
+        if tv_result is not None:
+            tmdb_id: int = tv_result["id"]
+            tmdb_title: str = tv_result.get("name")
 
             details = fetch_show_details(tmdb_id, api_key)
             time.sleep(REQUEST_DELAY)
@@ -162,6 +190,39 @@ def main() -> None:
                 "season_air_date": season_air_date,
                 "tmdb_lookup_type": lookup_type,
             }
+        else:
+            movie_result = search_tmdb_movie(title_clean, api_key)
+            time.sleep(REQUEST_DELAY)
+
+            if movie_result is not None:
+                tmdb_id = movie_result["id"]
+                tmdb_title = movie_result.get("title")
+
+                details = fetch_movie_details(tmdb_id, api_key)
+                time.sleep(REQUEST_DELAY)
+
+                row_data = {
+                    "title_clean": title_clean,
+                    "season": season_label,
+                    "tmdb_id": tmdb_id,
+                    "tmdb_title": tmdb_title,
+                    **details,
+                    "tmdb_lookup_type": "movie",
+                }
+            else:
+                row_data = {
+                    "title_clean": title_clean,
+                    "season": season_label,
+                    "tmdb_id": None,
+                    "tmdb_title": None,
+                    "tmdb_score": None,
+                    "status": None,
+                    "network": None,
+                    "type": None,
+                    "genre": None,
+                    "season_air_date": None,
+                    "tmdb_lookup_type": None,
+                }
 
         pd.DataFrame([row_data]).to_csv(OUTPUT_FILE, mode="a", header=write_header, index=False)
         write_header = False
