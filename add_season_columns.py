@@ -26,6 +26,9 @@ def extract_title_and_season(title) -> tuple[str, str]:
     parts = title.split(": ")
 
     if len(parts) == 1:
+        m = re.match(r"^(.+?)\s+([1-9]\d?)$", title)
+        if m:
+            return m.group(1), f"Season {m.group(2)}"
         return title, ""
 
     last = parts[-1]
